@@ -1,28 +1,33 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-params.str = 'Hello world!'
+params.chrYFilename = 'Homo_sapiens.GRCh38.dna.chromosome.Y.fa.gz'
+params.chrYUrl = 'ftp://ftp.ensembl.org/pub/release-84/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.Y.fa.gz'
 
-process splitLetters {
-  output:
-    path 'chunk_*'
+process DOWNLOAD {
+    publishDir 'results'
+    output:
+      path params.chrYFilename
 
-  """
-  printf '${params.str}' | split -b 6 - chunk_
-  """
+    """
+    wget '${params.chrYUrl}' -O '${params.chrYFilename}'
+    """
 }
 
-process convertToUpper {
-  input:
-    file x from letters
-  output:
-    stdout
+process UNGZIP {
+    publishDir 'results'
+    input:
+      path gz
+    output:
+      path 'file.fa'
 
-  """
-  rev $x
-  """
+    script:
+      """
+      zcat '${gz}' > 'file.fa'
+      """
 }
 
 workflow {
-  splitLetters | flatten | convertToUpper | view { it.trim() }
+  DOWNLOAD()
+  UNGZIP(DOWNLOAD.out)
 }
