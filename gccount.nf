@@ -44,8 +44,40 @@ process SPLIT {
       """
 }
 
+def chars = 'AT'
+process COUNTAT {
+    publishDir 'counts'
+
+    input:
+      path fasta
+    output:
+      path 'atcounts.txt'
+
+    script:
+      """
+      cat $fasta | fold -w 1 | grep '[$chars]' | wc -l | awk '{ print \$1 }' > atcounts.txt
+      """
+}
+
+chars = 'GC'
+process COUNTGC {
+    publishDir 'counts'
+
+    input:
+      path fasta
+    output:
+      path 'gccounts.txt'
+
+    script:
+      """
+      cat $fasta | wc -m > gccounts.txt
+      """
+}
+
 workflow {
   DOWNLOAD()
   UNGZIP(DOWNLOAD.out)
   SPLIT(UNGZIP.out)
+  COUNTAT(SPLIT.out)
+  COUNTGC(SPLIT.out)
 }
