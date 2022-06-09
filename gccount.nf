@@ -3,9 +3,11 @@ nextflow.enable.dsl=2
 
 params.chrYFilename = 'Homo_sapiens.GRCh38.dna.chromosome.Y.fa.gz'
 params.chrYUrl = 'ftp://ftp.ensembl.org/pub/release-84/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.Y.fa.gz'
+params.linesPerSplit = 100000
 
 process DOWNLOAD {
-    publishDir 'results'
+    publishDir 'rawdata'
+
     output:
       path params.chrYFilename
 
@@ -15,7 +17,8 @@ process DOWNLOAD {
 }
 
 process UNGZIP {
-    publishDir 'results'
+    publishDir 'rawdata'
+
     input:
       path gz
     output:
@@ -27,7 +30,22 @@ process UNGZIP {
       """
 }
 
+process SPLIT {
+    publishDir 'splits'
+
+    input:
+      path fasta
+    output:
+      path 'fasta_splits_*'
+
+    script:
+      """
+      split -l ${params.linesPerSplit} $fasta fasta_splits_
+      """
+}
+
 workflow {
   DOWNLOAD()
   UNGZIP(DOWNLOAD.out)
+  SPLIT(UNGZIP.out)
 }
