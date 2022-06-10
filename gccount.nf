@@ -44,9 +44,8 @@ process SPLIT {
       """
 }
 
-def chars = 'AT'
 process COUNTAT {
-    publishDir 'counts'
+    publishDir 'countsat'
 
     input:
       path fasta
@@ -55,13 +54,12 @@ process COUNTAT {
 
     script:
       """
-      cat $fasta | fold -w 1 | grep '[$chars]' | wc -l | awk '{ print \$1 }' > atcounts.txt
+      cat $fasta | fold -w 1 | grep '[AT]' | wc -l | awk '{ print \$1 }' >> atcounts.txt
       """
 }
 
-chars = 'GC'
 process COUNTGC {
-    publishDir 'counts'
+    publishDir 'countsgc'
 
     input:
       path fasta
@@ -70,14 +68,31 @@ process COUNTGC {
 
     script:
       """
-      cat $fasta | wc -m > gccounts.txt
+      cat $fasta | fold -w 1 | grep '[GC]' | wc -l | awk '{ print \$1 }' >> gccounts.txt
+      """
+}
+
+process SUMCOUNTS {
+    publishDir 'allcounts'
+
+    input:
+      path counts
+    output:
+      path 'allcounts'
+    
+    script:
+      """
+      awk '{ SUM += \$1 } END { print SUM }' $counts > allcounts
       """
 }
 
 workflow {
   DOWNLOAD()
   UNGZIP(DOWNLOAD.out)
-  SPLIT(UNGZIP.out)
-  COUNTAT(SPLIT.out)
-  COUNTGC(SPLIT.out)
+  UNGZIP.out.splitText( by: 100000, file: true ).set{ splits }
+
+  COUNTAT(splits)
+  COUNTGC(splits)
+  //COUNTAT.out.collectFile(name: 'collected_atcounts.txt' )
+  //COUNTAT.out.collectFile(name: 'collected_gccounts.txt' )
 }
