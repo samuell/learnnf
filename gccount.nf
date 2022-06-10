@@ -72,17 +72,31 @@ process COUNTGC {
       """
 }
 
-process SUMCOUNTS {
+process SUMATS {
     publishDir 'allcounts'
 
     input:
-      path counts
+      path allcounts
     output:
-      path 'allcounts'
-    
+      path 'allcounts.sum'
+
     script:
       """
-      awk '{ SUM += \$1 } END { print SUM }' $counts > allcounts
+      awk '{ SUM += \$1 } END { print SUM }' $allcounts > allcounts.sum
+      """
+}
+
+process SUMGCS {
+    publishDir 'allcounts'
+
+    input:
+      path allcounts
+    output:
+      path 'allcounts.sum'
+ 
+    script:
+      """
+      awk '{ SUM += \$1 } END { print SUM }' $allcounts > allcounts.sum
       """
 }
 
@@ -90,9 +104,10 @@ workflow {
   DOWNLOAD()
   UNGZIP(DOWNLOAD.out)
   UNGZIP.out.splitText( by: 100000, file: true ).set{ splits }
-
   COUNTAT(splits)
   COUNTGC(splits)
-  //COUNTAT.out.collectFile(name: 'collected_atcounts.txt' )
-  //COUNTAT.out.collectFile(name: 'collected_gccounts.txt' )
+  COUNTAT.out.collectFile( name: 'all_at_combined.txt' ).set{ all_ats }
+  COUNTGC.out.collectFile( name: 'all_gc_combined.txt' ).set{ all_gcs }
+  SUMATS( all_ats )
+  SUMGCS( all_gcs )
 }
