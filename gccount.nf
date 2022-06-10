@@ -6,8 +6,6 @@ params.chrYUrl = 'ftp://ftp.ensembl.org/pub/release-84/fasta/homo_sapiens/dna/Ho
 params.linesPerSplit = 100000
 
 process DOWNLOAD {
-    publishDir 'rawdata'
-
     output:
       path params.chrYFilename
 
@@ -17,8 +15,6 @@ process DOWNLOAD {
 }
 
 process UNGZIP {
-    publishDir 'rawdata'
-
     input:
       path gz
     output:
@@ -31,8 +27,6 @@ process UNGZIP {
 }
 
 process SPLIT {
-    publishDir 'splits'
-
     input:
       path fasta
     output:
@@ -45,8 +39,6 @@ process SPLIT {
 }
 
 process COUNTAT {
-    publishDir 'countsat'
-
     input:
       path fasta
     output:
@@ -59,8 +51,6 @@ process COUNTAT {
 }
 
 process COUNTGC {
-    publishDir 'countsgc'
-
     input:
       path fasta
     output:
@@ -73,30 +63,42 @@ process COUNTGC {
 }
 
 process SUMATS {
-    publishDir 'allcounts'
-
     input:
       path allcounts
     output:
-      path 'allcounts.sum'
+      path 'allcounts_at.sum'
 
     script:
       """
-      awk '{ SUM += \$1 } END { print SUM }' $allcounts > allcounts.sum
+      awk '{ SUM += \$1 } END { print SUM }' $allcounts > allcounts_at.sum
       """
 }
 
 process SUMGCS {
-    publishDir 'allcounts'
-
     input:
       path allcounts
     output:
-      path 'allcounts.sum'
- 
+      path 'allcounts_gc.sum'
+
     script:
       """
-      awk '{ SUM += \$1 } END { print SUM }' $allcounts > allcounts.sum
+      awk '{ SUM += \$1 } END { print SUM }' $allcounts > allcounts_gc.sum
+      """
+}
+
+process GCRATIO {
+    publishDir 'gcratio'
+
+    input:
+      path gccount
+      path atcount
+
+    output:
+      'gcratio.txt'
+
+    script:
+      """
+      gc=\$(cat $gccount); at=\$(cat $atcount); calc "\$gc/(\$gc+\$at)" > gcratio.txt
       """
 }
 
@@ -110,4 +112,5 @@ workflow {
   COUNTGC.out.collectFile( name: 'all_gc_combined.txt' ).set{ all_gcs }
   SUMATS( all_ats )
   SUMGCS( all_gcs )
+  GCRATIO( SUMGCS.out, SUMATS.out )
 }
