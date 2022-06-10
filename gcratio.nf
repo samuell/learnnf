@@ -1,4 +1,8 @@
 #!/usr/bin/env nextflow
+// A port of the scatter/gather example workflow in the SciPipe repo:
+// https://github.com/scipipe/scipipe/blob/master/examples/scatter_gather/scattergather.go
+// Author: Samuel Lampa shl@rilspace.com
+
 nextflow.enable.dsl=2
 
 params.chrYFilename = 'Homo_sapiens.GRCh38.dna.chromosome.Y.fa.gz'
